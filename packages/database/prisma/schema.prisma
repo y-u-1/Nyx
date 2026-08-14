@@ -60,6 +60,12 @@ model GuildSettings {
   levelUpNotify   String  @default("channel") // "channel" | "dm" | "off"
   levelUpChannelId String? // 未設定ならメッセージ送信元チャンネルに通知
 
+  // 地震速報
+  earthquakeEnabled    Boolean @default(false)
+  earthquakeChannelId  String?
+  earthquakeMinScale   Int     @default(30) // 震度x10表記(30=震度3)。これ以上の地震情報のみ通知
+  earthquakeEewEnabled Boolean @default(true) // 緊急地震速報(警報)も通知するか
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

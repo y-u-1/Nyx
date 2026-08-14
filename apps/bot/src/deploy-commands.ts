@@ -54,6 +54,7 @@ import { unlock } from "./commands/unlock.js";
 import { slowmode } from "./commands/slowmode.js";
 import { modlog } from "./commands/modlog.js";
 import { logsConfig } from "./commands/logs-config.js";
+import { earthquakeConfig } from "./commands/earthquake-config.js";
 
 const commands = [
   ping,
@@ -110,6 +111,7 @@ const commands = [
   slowmode,
   modlog,
   logsConfig,
+  earthquakeConfig,
 ].map((c) => c.data.toJSON());
 
 const rest = new REST().setToken(process.env.DISCORD_TOKEN!);
