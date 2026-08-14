@@ -1,7 +1,8 @@
 services:
-  - type: worker
+  - type: web
     name: nyx-bot
     env: node
+    plan: free
     buildCommand: pnpm install && pnpm --filter @nyx/database generate && pnpm --filter @nyx/bot build
     startCommand: pnpm --filter @nyx/bot start
     envVars:
@@ -19,6 +20,7 @@ services:
   - type: web
     name: nyx-dashboard
     env: node
+    plan: free
     buildCommand: pnpm install && pnpm --filter @nyx/database generate && pnpm --filter @nyx/dashboard build
     startCommand: pnpm --filter @nyx/dashboard start
     envVars:

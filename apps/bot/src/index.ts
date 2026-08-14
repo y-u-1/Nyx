@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { createClient } from "./client.js";
+import { startHealthServer } from "./health.js";
 import { registerReadyEvent } from "./events/ready.js";
 import { registerInteractionCreateEvent } from "./events/interactionCreate.js";
 import { registerMessageCreateEvent } from "./events/messageCreate.js";
@@ -153,5 +154,7 @@ client.once("ready", () => {
   requeueGiveaways(client).catch((error) => console.error("[Nyx.] Failed to requeue giveaways", error));
   startVoiceXpTracker(client);
 });
+
+startHealthServer();
 
 client.login(process.env.DISCORD_TOKEN);
