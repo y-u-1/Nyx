@@ -18,7 +18,7 @@ importers:
   apps/bot:
     dependencies:
       '@napi-rs/canvas':
-        specifier: ^0.1.53
+        specifier: ^0.1.68
         version: 0.1.100
       '@nyx/database':
         specifier: workspace:*
@@ -35,9 +35,6 @@ importers:
       dotenv:
         specifier: ^16.4.5
         version: 16.6.1
-      ws:
-        specifier: ^8.18.0
-        version: 8.21.3
     devDependencies:
       '@types/node':
         specifier: ^22.7.5
