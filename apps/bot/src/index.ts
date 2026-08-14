@@ -69,10 +69,8 @@ import { unlock } from "./commands/unlock.js";
 import { slowmode } from "./commands/slowmode.js";
 import { modlog } from "./commands/modlog.js";
 import { logsConfig } from "./commands/logs-config.js";
-import { earthquakeConfig } from "./commands/earthquake-config.js";
 import { requeueGiveaways } from "./utils/giveaway.js";
 import { startVoiceXpTracker } from "./utils/voiceXp.js";
-import { startEarthquakeListener } from "./utils/earthquake.js";
 
 const client = createClient();
 
@@ -132,8 +130,8 @@ const commands = [
   slowmode,
   modlog,
   logsConfig,
-  earthquakeConfig,
 ];
+
 for (const command of commands) {
   client.commands.set(command.data.name, command);
 }
@@ -154,9 +152,11 @@ registerMessageReactionAddEvent(client);
 registerMessageReactionRemoveEvent(client);
 
 client.once("ready", () => {
-  requeueGiveaways(client).catch((error) => console.error("[Nyx.] Failed to requeue giveaways", error));
+  requeueGiveaways(client).catch((error) =>
+    console.error("[Nyx.] Failed to requeue giveaways", error)
+  );
+
   startVoiceXpTracker(client);
-  startEarthquakeListener(client);
 });
 
 startHealthServer();
