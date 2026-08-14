@@ -85,7 +85,7 @@ export const shop: Command = {
       }
 
       const member = interaction.member;
-      const roleCache = member && "roles" in member && typeof member.roles !== "string" ? member.roles.cache : null;
+      const roleCache = member && !Array.isArray(member.roles) ? member.roles.cache : null;
       if (roleCache?.has(item.roleId)) {
         await interaction.reply({
           embeds: [baseEmbed({ tone: "warning", description: "You already own this item." })],

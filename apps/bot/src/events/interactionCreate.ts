@@ -48,7 +48,7 @@ async function handleGiveawayEnter(interaction: ButtonInteraction, giveawayId: s
   }
 
   const member = interaction.member;
-  const roleCache = member && "roles" in member && typeof member.roles !== "string" ? member.roles.cache : null;
+  const roleCache = member && !Array.isArray(member.roles) ? member.roles.cache : null;
 
   const hasBypass = Boolean(giveaway.bypassRoleId && roleCache?.has(giveaway.bypassRoleId));
 
@@ -173,7 +173,7 @@ async function handleTicketClaim(interaction: ButtonInteraction, ticketNumber: s
 
   const settings = await prisma.ticketSettings.findUnique({ where: { guildId: interaction.guildId } });
   const member = interaction.member;
-  const roleCache = member && "roles" in member && typeof member.roles !== "string" ? member.roles.cache : null;
+  const roleCache = member && !Array.isArray(member.roles) ? member.roles.cache : null;
 
   if (settings?.staffRoleId && !roleCache?.has(settings.staffRoleId)) {
     await interaction.reply({

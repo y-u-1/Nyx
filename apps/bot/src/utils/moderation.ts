@@ -1,5 +1,6 @@
 import type { Client, User } from "discord.js";
 import { prisma } from "@nyx/database";
+import { baseEmbed } from "./embeds.js";
 import { sendLog } from "./logging.js";
 
 export type ModAction = "warn" | "kick" | "ban" | "softban" | "timeout" | "purge" | "lock" | "unlock" | "slowmode";
