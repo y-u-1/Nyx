@@ -1,0 +1,36 @@
+services:
+  - type: worker
+    name: nyx-bot
+    env: node
+    buildCommand: pnpm install && pnpm --filter @nyx/database generate && pnpm --filter @nyx/bot build
+    startCommand: pnpm --filter @nyx/bot start
+    envVars:
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: DISCORD_CLIENT_ID
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: VERIFY_SITE_URL
+        sync: false
+
+  - type: web
+    name: nyx-dashboard
+    env: node
+    buildCommand: pnpm install && pnpm --filter @nyx/database generate && pnpm --filter @nyx/dashboard build
+    startCommand: pnpm --filter @nyx/dashboard start
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: DISCORD_CLIENT_ID
+        sync: false
+      - key: DISCORD_CLIENT_SECRET
+        sync: false
+      - key: NEXTAUTH_URL
+        sync: false
+      - key: NEXTAUTH_SECRET
+        sync: false

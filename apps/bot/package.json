@@ -1,0 +1,25 @@
+﻿{
+  "name": "@nyx/bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "deploy-commands": "tsx src/deploy-commands.ts"
+  },
+  "dependencies": {
+    "@nyx/database": "workspace:*",
+    "@nyx/locales": "workspace:*",
+    "discord.js": "^14.19.3",
+    "discord-player": "^7.1.0",
+    "@napi-rs/canvas": "^0.1.53",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.5",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3"
+  }
+}

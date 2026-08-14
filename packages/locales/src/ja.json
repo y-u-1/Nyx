@@ -1,0 +1,21 @@
+{
+  "common.error": "エラーが発生しました。",
+  "common.success": "完了しました。",
+
+  "verify.title": "Verify to access this server",
+  "verify.description": "このサーバーは **Nyx.** によって保護されています。下のボタンから認証してください。",
+  "verify.button": "認証する",
+  "verify.success": "認証が完了しました。",
+  "verify.failed": "認証に失敗しました。もう一度お試しください。",
+
+  "level.title": "レベル情報",
+  "level.rank": "ランク",
+  "level.xp": "経験値",
+  "level.coins": "コイン",
+
+  "ticket.opened": "チケットを作成しました。",
+  "ticket.closed": "チケットをクローズしました。",
+
+  "giveaway.ended": "ギブアウェイが終了しました。",
+  "giveaway.winner": "当選者"
+}

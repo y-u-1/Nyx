@@ -1,0 +1,21 @@
+{
+  "common.error": "An error occurred.",
+  "common.success": "Done.",
+
+  "verify.title": "Verify to access this server",
+  "verify.description": "This server is protected by **Nyx.**. Click the button below to verify.",
+  "verify.button": "Verify my account",
+  "verify.success": "Verification complete.",
+  "verify.failed": "Verification failed. Please try again.",
+
+  "level.title": "Level Info",
+  "level.rank": "Rank",
+  "level.xp": "XP",
+  "level.coins": "Coins",
+
+  "ticket.opened": "Ticket created.",
+  "ticket.closed": "Ticket closed.",
+
+  "giveaway.ended": "Giveaway has ended.",
+  "giveaway.winner": "Winner"
+}

@@ -1,0 +1,25 @@
+{
+  "name": "nyx",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Nyx. - Multi-purpose Discord bot monorepo",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "db:generate": "pnpm --filter @nyx/database generate",
+    "db:push": "pnpm --filter @nyx/database push",
+    "db:migrate": "pnpm --filter @nyx/database migrate",
+    "bot:dev": "pnpm --filter @nyx/bot dev",
+    "bot:deploy-commands": "pnpm --filter @nyx/bot deploy-commands",
+    "dashboard:dev": "pnpm --filter @nyx/dashboard dev"
+  },
+  "devDependencies": {
+    "turbo": "^2.1.3",
+    "typescript": "^5.6.3"
+  },
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

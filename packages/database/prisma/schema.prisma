@@ -1,0 +1,443 @@
+// Nyx. - Prisma Schema
+// 設計方針: 全テーブルに guildId を持たせ、サーバーごとにデータを分離する
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────────
+// サーバー単位の設定(ダッシュボードから編集)
+// ─────────────────────────────
+model GuildSettings {
+  id             String   @id @default(cuid())
+  guildId        String   @unique
+  locale         String   @default("ja") // "ja" | "en" (Embed本文の言語。コマンド名は英語固定)
+
+  // モデレーション
+  automodEnabled Boolean  @default(true)
+  logChannelId   String?
+
+  // 認証
+  verificationEnabled Boolean @default(false)
+  verifiedRoleId      String?
+  unverifiedRoleId    String?
+
+  // ブランディング(Embed用カラーパレット。16進数カラーコード)
+  colorSuccess String @default("#57F287")
+  colorWarning String @default("#FEE75C")
+  colorError   String @default("#ED4245")
+  colorPrimary String @default("#5865F2")
+
+  // 汎用化(サーバーごとに用語をカスタマイズ)
+  currencyName String @default("coins") // 経済システムの通貨名
+
+  // モデレーション処分履歴(/modlog)のケース番号カウンター
+  caseCounter Int @default(0)
+
+  // サーバールール(/rules で表示)
+  rulesText String?
+
+  // レベル機能(メッセージXP)
+  levelingEnabled   Boolean @default(true)
+  xpCooldownSeconds Int     @default(60) // 連続メッセージでのXP獲得を防ぐクールダウン(0でクールダウンなし)
+  xpMin             Int     @default(15) // 1メッセージあたりの最小XP
+  xpMax             Int     @default(25) // 1メッセージあたりの最大XP
+
+  // レベル機能(ボイスXP)
+  voiceXpEnabled         Boolean @default(false)
+  voiceXpAmount          Int     @default(10) // インターバルごとの付与XP
+  voiceXpIntervalMinutes Int     @default(5)
+  voiceXpIgnoreAfk       Boolean @default(true) // ミュート/スピーカーオフのメンバーを対象外にする
+  voiceXpMinMembers      Int     @default(2) // このボイスチャンネルの人数未満はXP対象外(1人配信対策)
+
+  // レベルアップ通知
+  levelUpNotify   String  @default("channel") // "channel" | "dm" | "off"
+  levelUpChannelId String? // 未設定ならメッセージ送信元チャンネルに通知
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// レベル機能の対象外にするチャンネル(コマンド専用チャンネルなど)
+model NoXpChannel {
+  id        String @id @default(cuid())
+  guildId   String
+  channelId String
+
+  @@unique([guildId, channelId])
+}
+
+// レベル到達時に自動付与するロール(1レベルに複数ロード可)
+model LevelRoleReward {
+  id      String @id @default(cuid())
+  guildId String
+  level   Int
+  roleId  String
+
+  @@unique([guildId, level, roleId])
+  @@index([guildId, level])
+}
+
+// ─────────────────────────────
+// レベル / 経済
+// ─────────────────────────────
+
+// 経済システムのショップ(サーバーごとに購入可能なロールを設定)
+model ShopItem {
+  id          String  @id @default(cuid())
+  guildId     String
+  name        String
+  price       BigInt
+  roleId      String
+  description String?
+
+  @@unique([guildId, name])
+}
+model UserLevel {
+  id      String @id @default(cuid())
+  guildId String
+  userId  String
+
+  xp    BigInt @default(0)
+  coins BigInt @default(0)
+  level Int    @default(0)
+
+  lastMessageAt DateTime? // メッセージXPのクールダウン判定に使用
+  lastDailyAt   DateTime? // /daily コマンドのクールダウン判定に使用
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([guildId, userId])
+  @@index([guildId, xp])
+}
+
+// ─────────────────────────────
+// モデレーション(警告履歴)
+// ─────────────────────────────
+model Warning {
+  id          String   @id @default(cuid())
+  guildId     String
+  userId      String
+  moderatorId String
+  reason      String
+  createdAt   DateTime @default(now())
+
+  @@index([guildId, userId])
+}
+
+// 全モデレーションアクション(warn/kick/ban/timeout/softban等)を横断する処分履歴(/modlog)
+model ModCase {
+  id          String   @id @default(cuid())
+  guildId     String
+  caseNumber  Int
+  userId      String
+  moderatorId String
+  action      String
+  reason      String
+  createdAt   DateTime @default(now())
+
+  @@unique([guildId, caseNumber])
+  @@index([guildId, userId])
+}
+
+// ─────────────────────────────
+// 認証ログ
+// ─────────────────────────────
+model VerificationLog {
+  id        String   @id @default(cuid())
+  guildId   String
+  userId    String
+  success   Boolean
+  ipHash    String?  // 生IPは保存せずハッシュ化して保存する想定
+  createdAt DateTime @default(now())
+
+  @@index([guildId, userId])
+}
+
+// イベントログ設定(参加/退出・メッセージ編集/削除・ボイス・チャンネル作成/削除)
+model LogSettings {
+  id                   String  @id @default(cuid())
+  guildId              String  @unique
+  memberLogChannelId   String? // メンバー参加/退出
+  messageLogChannelId  String? // メッセージ編集/削除
+  vcLogChannelId       String? // ボイスチャンネル参加/退出/移動
+  channelLogChannelId  String? // チャンネル作成/削除
+  spamLogChannelId       String? // AutoMod違反
+  moderationLogChannelId String? // warn/kick/ban/timeout等の処分
+  ticketLogChannelId      String? // チケットの開設/クレーム/クローズ
+  redeemLogChannelId      String? // Redeemコードの作成/使用
+}
+
+// ─────────────────────────────
+// リアクションロール
+// ─────────────────────────────
+model ReactionRole {
+  id        String @id @default(cuid())
+  guildId   String
+  messageId String
+  emoji     String
+  roleId    String
+
+  @@unique([messageId, emoji])
+  @@index([guildId])
+}
+
+// ボタン式のロールパネル(認証パネルと同じComponents V2の見た目)
+model RolePanel {
+  id        String @id @default(cuid())
+  guildId   String
+  channelId String
+  messageId String @unique
+  title     String
+  createdAt DateTime @default(now())
+
+  roles RolePanelRole[]
+}
+
+model RolePanelRole {
+  id      String @id @default(cuid())
+  panelId String
+  roleId  String
+  label   String
+
+  panel RolePanel @relation(fields: [panelId], references: [id], onDelete: Cascade)
+
+  @@unique([panelId, roleId])
+}
+
+// ─────────────────────────────
+// チケットシステム
+// ─────────────────────────────
+model Ticket {
+  id           String    @id @default(cuid())
+  guildId      String
+  channelId    String    @unique
+  openerId     String
+  claimedById  String?
+  status       String    @default("open") // "open" | "claimed" | "closed"
+  createdAt    DateTime  @default(now())
+  closedAt     DateTime?
+
+  @@index([guildId, status])
+}
+
+// AutoMod・アンチレイド設定
+model AutoModSettings {
+  id      String @id @default(cuid())
+  guildId String @unique
+
+  // メッセージ系フィルター
+  bannedWords          String[] @default([])
+  blockInvites         Boolean  @default(false)
+  blockLinks           Boolean  @default(false)
+  maxMentions          Int      @default(5) // 0で無効
+  spamMessageThreshold Int      @default(5) // spamWindowSeconds内にこの件数を超えると連投判定
+  spamWindowSeconds    Int      @default(5)
+  timeoutSeconds       Int      @default(600) // 違反時の自動タイムアウト時間
+  bypassRoleId         String? // このロールを持つメンバーはAutoMod対象外(モデレーター等)
+
+  // アンチレイド(参加系)
+  antiRaidEnabled       Boolean @default(false)
+  raidJoinThreshold     Int     @default(10)
+  raidJoinWindowSeconds Int     @default(30)
+  raidAction            String  @default("kick") // "kick" | "ban" | "lockdown"
+  minAccountAgeDays     Int? // 常時有効。未設定なら無効。これより新しいアカウントは参加時に自動キック
+}
+
+model TicketSettings {
+  id             String @id @default(cuid())
+  guildId        String @unique
+  categoryId     String? // チケットチャンネルを作成するカテゴリ
+  staffRoleId    String? // チケットを見える・対応できるスタッフロール
+  panelChannelId String? // パネルを投稿したチャンネル
+  ticketCounter  Int    @default(0) // チケット連番(ticket-0001 のような命名に使用)
+}
+
+// ─────────────────────────────
+// ギブアウェイ
+// ─────────────────────────────
+model Giveaway {
+  id           String   @id @default(cuid())
+  guildId      String
+  channelId    String
+  messageId    String   @unique
+  prize        String
+  winnerCount  Int      @default(1)
+  hostId       String
+  endsAt       DateTime
+  ended        Boolean  @default(false)
+  cancelled    Boolean  @default(false)
+
+  // このロールを持つメンバーのみ参加可能(未設定なら誰でも参加可)
+  requiredRoleId String?
+
+  // このロールを持つメンバーはエントリーの重み(当選確率)が上がる
+  bonusRoleId     String?
+  bonusEntries    Int     @default(2)
+
+  // 追加オプション(GiveawayBot系の主要機能に相当)
+  imageUrl            String?  // パネルに表示する画像
+  thumbnailUrl        String?  // パネル右上に表示する小さいサムネイル画像
+  description          String?  // 賞品説明・注意書きなど任意の追加テキスト
+  pingRoleId            String?  // 開始時・終了時にメンションするロール
+  minAccountAgeDays    Int?     // これより新しいアカウントは参加不可(荒らし対策)
+  minLevel              Int?     // レベルシステム(UserLevel)と連携した参加条件
+  blacklistRoleId      String?  // このロールを持つメンバーは参加不可
+  bypassRoleId          String?  // このロールを持つメンバーは他の全条件を無視して参加可能(モデレーター用など)
+  accentColor           String?  // 開催中パネルのアクセントカラー(16進数、例: "#5865F2")
+  endColor               String?  // 終了時パネルのアクセントカラー(未指定なら既定の成功色を使用)
+  winnersRoleId          String?  // 当選者に自動付与するロール
+  createMessage          String?  // 開始時にパネルと一緒に送る追加メッセージ
+  winnersDmMessage      String?  // 当選DMのカスタム文面({prize} で賞品名を埋め込み可能)
+  coinPrize              Int?     // 当選者に自動付与するコイン数(経済システムと連携)
+  dmWinners             Boolean  @default(false) // 当選者にDMでも通知するか
+
+  createdAt DateTime @default(now())
+
+  entries GiveawayEntry[]
+
+  @@index([guildId, ended])
+}
+
+model GiveawayEntry {
+  id         String   @id @default(cuid())
+  giveawayId String
+  userId     String
+  // エントリー時点でのボーナスロール保有状況から算出した重み(当選抽選時にこの数だけ枠に入る)
+  weight     Int      @default(1)
+  createdAt  DateTime @default(now())
+
+  giveaway Giveaway @relation(fields: [giveawayId], references: [id], onDelete: Cascade)
+
+  @@unique([giveawayId, userId])
+}
+
+// ─────────────────────────────
+// Redeemシステム(独自仕様)
+// ─────────────────────────────
+model RedeemCode {
+  id         String   @id @default(cuid())
+  guildId    String
+  code       String
+  roleId     String?
+  imageUrl   String?
+  maxUses    Int      @default(1)
+  usedCount  Int      @default(0)
+  expiresAt  DateTime?
+  createdAt  DateTime @default(now())
+
+  redemptions RedeemRedemption[]
+
+  @@unique([guildId, code])
+}
+
+model RedeemRedemption {
+  id           String   @id @default(cuid())
+  redeemCodeId String
+  userId       String
+  redeemedAt   DateTime @default(now())
+
+  redeemCode RedeemCode @relation(fields: [redeemCodeId], references: [id], onDelete: Cascade)
+
+  @@unique([redeemCodeId, userId])
+}
+
+// ─────────────────────────────
+// 実績・バッジ
+// ─────────────────────────────
+model Badge {
+  id          String @id @default(cuid())
+  guildId     String
+  name        String
+  emoji       String?
+  description String?
+
+  userBadges UserBadge[]
+
+  @@unique([guildId, name])
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  guildId   String
+  userId    String
+  badgeId   String
+  awardedAt DateTime @default(now())
+
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, userId, badgeId])
+}
+
+// ─────────────────────────────
+// 投票
+// ─────────────────────────────
+model Poll {
+  id        String   @id @default(cuid())
+  guildId   String
+  channelId String
+  messageId String   @unique
+  question  String
+  options   String[]
+  closed    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  votes PollVote[]
+}
+
+model PollVote {
+  id          String @id @default(cuid())
+  pollId      String
+  userId      String
+  optionIndex Int
+
+  poll Poll @relation(fields: [pollId], references: [id], onDelete: Cascade)
+
+  @@unique([pollId, userId])
+}
+
+// ─────────────────────────────
+// 申請フォーム
+// ─────────────────────────────
+model ApplicationType {
+  id              String   @id @default(cuid())
+  guildId         String
+  name            String
+  description     String?
+  reviewChannelId String
+  questions       String[] // 最大5問(Discord Modalの入力欄上限)
+
+  submissions ApplicationSubmission[]
+
+  @@unique([guildId, name])
+}
+
+model ApplicationSubmission {
+  id                String   @id @default(cuid())
+  applicationTypeId String
+  userId            String
+  answers           String[]
+  createdAt         DateTime @default(now())
+
+  applicationType ApplicationType @relation(fields: [applicationTypeId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────
+// パートナー/外交関係
+// ─────────────────────────────
+model Partner {
+  id          String   @id @default(cuid())
+  guildId     String
+  name        String
+  inviteUrl   String?
+  description String?
+  addedAt     DateTime @default(now())
+
+  @@unique([guildId, name])
+}
