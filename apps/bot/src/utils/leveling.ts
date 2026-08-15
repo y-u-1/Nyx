@@ -1,18 +1,18 @@
-﻿import { AttachmentBuilder, MessageFlags, type Client } from "discord.js";
+import { AttachmentBuilder, MessageFlags, type Client } from "discord.js";
 import { prisma } from "@nyx/database";
 import { buildPanel } from "./embeds.js";
 import { generateLevelUpImage } from "./rankcard.js";
 
 /**
- * 邏ｯ險・P縺九ｉ繝ｬ繝吶Ν繧堤ｮ怜・縺吶ｋ縺溘ａ縺ｮ蠢・ｦ々P繧ｫ繝ｼ繝悶・
- * 繧医￥縺ゅｋ繝ｬ繝吶Μ繝ｳ繧ｰBot縺ｧ菴ｿ繧上ｌ繧倶ｺ梧ｬ｡髢｢謨ｰ逧・↑繧ｫ繝ｼ繝・繝ｬ繝吶Ν縺御ｸ翫′繧九⊇縺ｩ蠢・ｦ・㍼縺悟｢励∴繧・縲・
- * xpForLevel(n) = 縺昴・繝ｬ繝吶Ν縺ｫ蛻ｰ驕斐☆繧九・縺ｫ蠢・ｦ√↑縲後◎縺ｮ繝ｬ繝吶Ν蜊倅ｽ薙・縲更P驥・
+ * 累計XPからレベルを算出するための必要XPカーブ。
+ * よくあるレベリングBotで使われる二次関数的なカーブ(レベルが上がるほど必要量が増える)。
+ * xpForLevel(n) = そのレベルに到達するのに必要な「そのレベル単体の」XP量
  */
 function xpForLevel(level: number): number {
   return 5 * level * level + 50 * level + 100;
 }
 
-/** 邏ｯ險・P縺九ｉ迴ｾ蝨ｨ縺ｮ繝ｬ繝吶Ν繝ｻ縺昴・繝ｬ繝吶Ν蜀・〒縺ｮ騾ｲ謐励・谺｡繝ｬ繝吶Ν縺ｾ縺ｧ縺ｮ蠢・ｦ々P繧堤ｮ怜・縺吶ｋ */
+/** 累計XPから現在のレベル・そのレベル内での進捗・次レベルまでの必要XPを算出する */
 export function calculateLevel(totalXp: number) {
   let level = 0;
   let remaining = totalXp;
@@ -29,7 +29,16 @@ export function calculateLevel(totalXp: number) {
   };
 }
 
-/** 繝ｩ繝ｳ繝繝縺ｪXP驥上ｒ遽・峇蜀・°繧臥函謌舌☆繧・Arcane縺ｮ"Random"繝｢繝ｼ繝峨↓逶ｸ蠖・ */
+/** 指定レベルに到達するのに必要な累計XP(そのレベルの開始地点)を計算する。calculateLevelの逆関数。 */
+export function xpForLevelStart(targetLevel: number): number {
+  let total = 0;
+  for (let level = 0; level < targetLevel; level++) {
+    total += xpForLevel(level);
+  }
+  return total;
+}
+
+/** ランダムなXP量を範囲内から生成する(Arcaneの"Random"モードに相当) */
 export function randomXp(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -40,8 +49,8 @@ interface AddXpResult {
 }
 
 /**
- * XP繧剃ｻ倅ｸ弱＠縲√Ξ繝吶Ν繧｢繝・・縺励※縺・ｌ縺ｰ繝ｭ繝ｼ繝ｫ繝ｪ繝ｯ繝ｼ繝峨・莉倅ｸ弱→騾夂衍繧定｡後≧縲・
- * 1蝗槭・XP莉倅ｸ弱〒隍・焚繝ｬ繝吶Ν蛻・ｸ翫′縺｣縺溷ｴ蜷医ｂ縺ｾ縺ｨ繧√※蜃ｦ逅・☆繧九・
+ * XPを付与し、レベルアップしていればロールリワードの付与と通知を行う。
+ * 1回のXP付与で複数レベル分上がった場合もまとめて処理する。
  */
 export async function addXp(client: Client, guildId: string, userId: string, amount: number, notifyChannelId?: string): Promise<AddXpResult> {
   const before = await prisma.userLevel.upsert({
@@ -59,7 +68,7 @@ export async function addXp(client: Client, guildId: string, userId: string, amo
 
   await prisma.userLevel.update({ where: { id: before.id }, data: { level: newLevel } });
 
-  // 縺薙・繝ｬ繝吶Ν蛻ｰ驕斐〒譁ｰ縺溘↓莉倅ｸ弱☆縺ｹ縺阪Ο繝ｼ繝ｫ繝ｪ繝ｯ繝ｼ繝峨ｒ縺ｾ縺ｨ繧√※蜿門ｾ・鬟帙・邏壹＠縺溷ｴ蜷医ｂ蜈ｨ驛ｨ諡ｾ縺・
+  // このレベル到達で新たに付与すべきロールリワードをまとめて取得(飛び級した場合も全部拾う)
   const rewards = await prisma.levelRoleReward.findMany({
     where: { guildId, level: { gt: before.level, lte: newLevel } },
   });

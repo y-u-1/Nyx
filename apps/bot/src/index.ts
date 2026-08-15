@@ -85,6 +85,10 @@ import { vouch } from "./commands/vouch.js";
 import { reputation } from "./commands/reputation.js";
 import { welcomeConfig } from "./commands/welcome-config.js";
 import { giveawayEntrants } from "./commands/giveaway-entrants.js";
+import { level } from "./commands/level.js";
+import { unban } from "./commands/unban.js";
+import { clearWarnings } from "./commands/clear-warnings.js";
+import { help } from "./commands/help.js";
 import { requeueGiveaways } from "./utils/giveaway.js";
 import { startVoiceXpTracker } from "./utils/voiceXp.js";
 import { startEarthquakeListener } from "./utils/earthquake.js";
@@ -164,6 +168,10 @@ const commands = [
   reputation,
   welcomeConfig,
   giveawayEntrants,
+  level,
+  unban,
+  clearWarnings,
+  help,
 ];
 for (const command of commands) {
   client.commands.set(command.data.name, command);
