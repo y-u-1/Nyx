@@ -3,7 +3,7 @@ services:
     name: nyx-bot
     env: node
     plan: free
-    buildCommand: pnpm install && pnpm --filter @nyx/database generate && pnpm --filter @nyx/bot build
+    buildCommand: pnpm install && pnpm --filter @nyx/database generate && pnpm --filter @nyx/database build && pnpm --filter @nyx/bot build
     startCommand: pnpm --filter @nyx/bot start
     envVars:
       - key: DISCORD_TOKEN
@@ -21,7 +21,7 @@ services:
     name: nyx-dashboard
     env: node
     plan: free
-    buildCommand: pnpm install && pnpm --filter @nyx/database generate && pnpm --filter @nyx/dashboard build
+    buildCommand: pnpm install && pnpm --filter @nyx/database generate && pnpm --filter @nyx/database build && pnpm --filter @nyx/dashboard build
     startCommand: pnpm --filter @nyx/dashboard start
     envVars:
       - key: DATABASE_URL

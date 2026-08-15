@@ -8,6 +8,7 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "db:generate": "pnpm --filter @nyx/database generate",
+    "db:build": "pnpm --filter @nyx/database build",
     "db:push": "pnpm --filter @nyx/database push",
     "db:migrate": "pnpm --filter @nyx/database migrate",
     "bot:dev": "pnpm --filter @nyx/bot dev",
