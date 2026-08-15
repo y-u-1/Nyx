@@ -13,7 +13,7 @@ export async function initPlayer(client: Client) {
 
   player.events.on("playerStart", async (queue, track) => {
     const channel = queue.metadata as TextBasedChannel | undefined;
-    if (!channel) return;
+    if (!channel || !("send" in channel)) return;
 
     const panel = buildPanel({
       tone: "success",
@@ -30,7 +30,7 @@ export async function initPlayer(client: Client) {
 
   player.events.on("emptyQueue", async (queue) => {
     const channel = queue.metadata as TextBasedChannel | undefined;
-    if (!channel) return;
+    if (!channel || !("send" in channel)) return;
 
     const panel = buildPanel({ tone: "primary", title: "Queue Finished", intro: "No more tracks in the queue. Leaving the voice channel." });
 
