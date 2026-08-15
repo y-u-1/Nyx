@@ -8,7 +8,8 @@ import { buildPanel } from "./embeds.js";
  * 曲の再生開始・キュー終了時にComponents V2パネルを自動投稿するイベントもここで登録する。
  */
 export async function initPlayer(client: Client) {
-  const player = new Player(client);
+  // 上記と同じ理由(discord-player側とこちら側のdiscord.js型がNodeNext解決モードで別物扱いされる既知の問題)の回避策
+  const player = new Player(client as any);
   await player.extractors.loadMulti(DefaultExtractors);
 
   player.events.on("playerStart", async (queue, track) => {

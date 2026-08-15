@@ -24,7 +24,10 @@ export const play: Command = {
     const player = useMainPlayer();
 
     try {
-      const { track } = await player.play(voiceChannel, query, {
+      // discord-playerが参照するdiscord.jsの型と、こちらのdiscord.jsの型が
+      // TypeScriptのNodeNext解決モードの都合で別物として扱われてしまう既知の問題への回避策。
+      // 実行時の型は完全に一致しているため、動作上の問題はない。
+      const { track } = await player.play(voiceChannel as any, query, {
         nodeOptions: {
           metadata: interaction.channel as TextBasedChannel,
           leaveOnEmpty: true,
