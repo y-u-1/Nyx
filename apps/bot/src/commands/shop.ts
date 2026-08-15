@@ -112,6 +112,10 @@ export const shop: Command = {
         data: { coins: { decrement: item.price } },
       });
 
+      await prisma.purchase.create({
+        data: { guildId: interaction.guildId, userId: interaction.user.id, itemName: item.name, price: item.price },
+      });
+
       const guildMember = await interaction.guild!.members.fetch(interaction.user.id);
       await guildMember.roles.add(item.roleId);
 

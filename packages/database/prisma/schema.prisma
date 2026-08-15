@@ -37,6 +37,12 @@ model GuildSettings {
   // 汎用化(サーバーごとに用語をカスタマイズ)
   currencyName String @default("coins") // 経済システムの通貨名
 
+  // Welcome/Leaveメッセージ
+  welcomeEnabled   Boolean @default(true)
+  welcomeChannelId String?
+  leaveEnabled     Boolean @default(true)
+  leaveChannelId   String?
+
   // モデレーション処分履歴(/modlog)のケース番号カウンター
   caseCounter Int @default(0)
 
@@ -446,4 +452,46 @@ model Partner {
   addedAt     DateTime @default(now())
 
   @@unique([guildId, name])
+}
+
+// ─────────────────────────────
+// 汎用化(サーバーごとの用語カスタマイズ)
+// ─────────────────────────────
+// 通貨名(GuildSettings.currencyName)以外の任意の用語を key-value で保持する。
+// 例: key="rank_label" value="Rank" のように、コマンド側で getTerm(guildId, key, default) 経由で参照する。
+model GuildTerm {
+  id      String @id @default(cuid())
+  guildId String
+  key     String
+  value   String
+
+  @@unique([guildId, key])
+}
+
+// ─────────────────────────────
+// 経済(購入履歴/持ち物)
+// ─────────────────────────────
+model Purchase {
+  id           String   @id @default(cuid())
+  guildId      String
+  userId       String
+  itemName     String
+  price        BigInt
+  purchasedAt  DateTime @default(now())
+
+  @@index([guildId, userId])
+}
+
+// ─────────────────────────────
+// 評価/評判(Vouch)
+// ─────────────────────────────
+model Vouch {
+  id          String   @id @default(cuid())
+  guildId     String
+  fromUserId  String
+  toUserId    String
+  comment     String?
+  createdAt   DateTime @default(now())
+
+  @@index([guildId, toUserId])
 }

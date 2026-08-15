@@ -1,6 +1,8 @@
-import type { GuildMember, PartialGuildMember } from "discord.js";
+import { MessageFlags, type GuildMember, type PartialGuildMember } from "discord.js";
+import { prisma } from "@nyx/database";
 import type { NyxClient } from "../client.js";
 import { sendLog } from "../utils/logging.js";
+import { buildPanel } from "../utils/embeds.js";
 
 export function registerGuildMemberRemoveEvent(client: NyxClient) {
   client.on("guildMemberRemove", async (member: GuildMember | PartialGuildMember) => {
@@ -15,6 +17,20 @@ export function registerGuildMemberRemoveEvent(client: NyxClient) {
         `**User:** <@${member.id}> (\`${member.user.tag}\`)\n**Roles:** ${roles.length > 0 ? roles.join(", ") : "None"}\n**Member count:** \`${member.guild.memberCount}\``,
         "error",
       );
+
+      const settings = await prisma.guildSettings.findUnique({ where: { guildId: member.guild.id } });
+      if (settings?.leaveEnabled && settings.leaveChannelId) {
+        const channel = await client.channels.fetch(settings.leaveChannelId).catch(() => null);
+        if (channel && !channel.isDMBased() && channel.isTextBased()) {
+          const panel = buildPanel({
+            tone: "error",
+            title: "Goodbye",
+            intro: `**${member.user.tag}** has left the server.`,
+            creditLine: "Powered by **Nyx.**",
+          });
+          await channel.send({ components: [panel], flags: MessageFlags.IsComponentsV2 });
+        }
+      }
     } catch (error) {
       console.error("[Nyx.] Failed to process guildMemberRemove", error);
     }

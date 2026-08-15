@@ -3,6 +3,7 @@ import { prisma } from "@nyx/database";
 import type { Command } from "../client.js";
 import { baseEmbed } from "../utils/embeds.js";
 import { calculateLevel } from "../utils/leveling.js";
+import { getTerm } from "../utils/terms.js";
 
 export const profile: Command = {
   data: new SlashCommandBuilder()
@@ -27,9 +28,10 @@ export const profile: Command = {
 
     const { level } = userLevel ? calculateLevel(Number(userLevel.xp)) : { level: 0 };
     const joinedUnix = member?.joinedTimestamp ? Math.floor(member.joinedTimestamp / 1000) : null;
+    const rankLabel = await getTerm(interaction.guildId, "rank_label", "Level");
 
     const lines = [
-      `**Level:** \`${level}\``,
+      `**${rankLabel}:** \`${level}\``,
       `**Coins:** \`${(userLevel?.coins ?? 0n).toString()}\``,
       joinedUnix ? `**Joined:** <t:${joinedUnix}:D>` : null,
       member ? `**Roles:** ${member.roles.cache.filter((r) => r.id !== interaction.guildId).map((r) => `<@&${r.id}>`).join(", ") || "None"}` : null,

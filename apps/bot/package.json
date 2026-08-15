@@ -9,14 +9,20 @@
     "start": "node dist/index.js",
     "deploy-commands": "tsx src/deploy-commands.ts"
   },
-"dependencies": {
-  "@napi-rs/canvas": "^0.1.68",
-  "@nyx/database": "workspace:*",
-  "@nyx/locales": "workspace:*",
-  "discord.js": "^14.19.3",
-  "discord-player": "^7.1.0",
-  "dotenv": "^16.4.5"
-},
+  "dependencies": {
+    "@nyx/database": "workspace:*",
+    "@nyx/locales": "workspace:*",
+    "discord.js": "^14.19.3",
+    "discord-player": "^7.1.0",
+    "@discord-player/extractor": "^7.1.0",
+    "@discordjs/voice": "^0.17.0",
+    "opusscript": "^0.1.1",
+    "libsodium-wrappers": "^0.7.15",
+    "ffmpeg-static": "^5.2.0",
+    "@napi-rs/canvas": "^0.1.53",
+    "ws": "^8.18.0",
+    "dotenv": "^16.4.5"
+  },
   "devDependencies": {
     "@types/node": "^22.7.5",
     "@types/ws": "^8.5.12",
