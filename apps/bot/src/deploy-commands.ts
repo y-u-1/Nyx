@@ -74,6 +74,9 @@ import { level } from "./commands/level.js";
 import { unban } from "./commands/unban.js";
 import { clearWarnings } from "./commands/clear-warnings.js";
 import { help } from "./commands/help.js";
+import { affinity } from "./commands/affinity.js";
+import { hug } from "./commands/hug.js";
+import { pat } from "./commands/pat.js";
 
 const commands = [
   ping,
@@ -150,6 +153,9 @@ const commands = [
   unban,
   clearWarnings,
   help,
+  affinity,
+  hug,
+  pat,
 ].map((c) => c.data.toJSON());
 
 const rest = new REST().setToken(process.env.DISCORD_TOKEN!);

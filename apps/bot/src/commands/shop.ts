@@ -16,7 +16,7 @@ export const shop: Command = {
         .setName("add")
         .setDescription("Add an item to the shop (admin)")
         .addStringOption((opt) => opt.setName("name").setDescription("Item name").setRequired(true))
-        .addIntegerOption((opt) => opt.setName("price").setDescription("Price in coins").setRequired(true).setMinValue(1))
+        .addIntegerOption((opt) => opt.setName("price").setDescription("Price in coins").setRequired(true).setMinValue(1).setMaxValue(1_000_000_000))
         .addRoleOption((opt) => opt.setName("role").setDescription("Role granted on purchase").setRequired(true))
         .addStringOption((opt) => opt.setName("description").setDescription("Short description")),
     )

@@ -495,3 +495,27 @@ model Vouch {
 
   @@index([guildId, toUserId])
 }
+
+// ─────────────────────────────
+// 親密度(Affinity)
+// 2人1組の結婚/パートナー制ではなく、誰とでも個別に育つ累積ポイント制。
+// userAId/userBId は常に文字列比較で小さい方をA、大きい方をBに正規化して格納する
+// (A-BとB-Aで別レコードにならないようにするため)。
+// ─────────────────────────────
+model Affinity {
+  id      String @id @default(cuid())
+  guildId String
+  userAId String
+  userBId String
+
+  points Int @default(0)
+
+  // 会話量による自動加算のクールダウン判定用(連投による稼ぎ防止)
+  lastAutoGainAt DateTime?
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([guildId, userAId, userBId])
+  @@index([guildId, userAId])
+  @@index([guildId, userBId])
+}

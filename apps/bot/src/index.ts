@@ -89,6 +89,9 @@ import { level } from "./commands/level.js";
 import { unban } from "./commands/unban.js";
 import { clearWarnings } from "./commands/clear-warnings.js";
 import { help } from "./commands/help.js";
+import { affinity } from "./commands/affinity.js";
+import { hug } from "./commands/hug.js";
+import { pat } from "./commands/pat.js";
 import { requeueGiveaways } from "./utils/giveaway.js";
 import { startVoiceXpTracker } from "./utils/voiceXp.js";
 import { startEarthquakeListener } from "./utils/earthquake.js";
@@ -172,6 +175,9 @@ const commands = [
   unban,
   clearWarnings,
   help,
+  affinity,
+  hug,
+  pat,
 ];
 for (const command of commands) {
   client.commands.set(command.data.name, command);

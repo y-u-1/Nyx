@@ -1,13 +1,16 @@
-﻿const UNIT_MS: Record<string, number> = {
+const UNIT_MS: Record<string, number> = {
   s: 1000,
   m: 60 * 1000,
   h: 60 * 60 * 1000,
   d: 24 * 60 * 60 * 1000,
 };
 
+/** parseDuration が受け付ける最大の長さ(10年)。異常に巨大な入力による Date/setTimeout の破綻を防ぐための安全上限。 */
+export const MAX_DURATION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
+
 /**
- * "10m" / "2h" / "1d" / "30s" 縺ｮ繧医≧縺ｪ蜊倅ｸ縺ｮ謨ｰ蛟､+蜊倅ｽ阪・譁・ｭ怜・繧偵Α繝ｪ遘偵↓螟画鋤縺吶ｋ縲・
- * 荳肴ｭ｣縺ｪ蠖｢蠑上・蝣ｴ蜷医・ null 繧定ｿ斐☆縲・
+ * "10m" / "2h" / "1d" / "30s" のような単一の数値+単位の文字列をミリ秒に変換する。
+ * 不正な形式・0以下・MAX_DURATION_MS超え・非有限値(Infinityなど)の場合は null を返す。
  */
 export function parseDuration(input: string): number | null {
   const match = input.trim().match(/^(\d+)\s*(s|m|h|d)$/i);
@@ -16,7 +19,49 @@ export function parseDuration(input: string): number | null {
   const value = Number(match[1]);
   const unit = match[2].toLowerCase();
 
-  if (value <= 0) return null;
+  if (!Number.isFinite(value) || value <= 0) return null;
 
-  return value * UNIT_MS[unit];
+  const ms = value * UNIT_MS[unit];
+
+  if (!Number.isFinite(ms) || ms > MAX_DURATION_MS) return null;
+
+  return ms;
+}
+
+/** Node.js の setTimeout は内部で32bit符号付き整数(最大約24.8日)しかdelayに扱えない。
+ * これを超える値を渡すと即座に発火してしまう(TimeoutOverflowWarning)ため、
+ * ギブアウェイやアンケートの終了時刻など長期間の待機はこのヘルパーを必ず経由すること。
+ */
+const MAX_SAFE_TIMEOUT_MS = 2 ** 31 - 1;
+
+export interface SafeTimer {
+  /** タイマーを止める。giveaway.ts の clearTimeout(timer) 相当。 */
+  cancel: () => void;
+}
+
+/** delayMs がどれだけ大きくても正しく待機できる setTimeout ラッパー。
+ * MAX_SAFE_TIMEOUT_MS を超える場合は内部でタイマーを繋ぎ直して残り時間を待つ。
+ */
+export function safeSetTimeout(callback: () => void, delayMs: number): SafeTimer {
+  let cancelled = false;
+  let handle: NodeJS.Timeout;
+
+  const arm = (remaining: number) => {
+    if (remaining > MAX_SAFE_TIMEOUT_MS) {
+      handle = setTimeout(() => arm(remaining - MAX_SAFE_TIMEOUT_MS), MAX_SAFE_TIMEOUT_MS);
+    } else {
+      handle = setTimeout(() => {
+        if (!cancelled) callback();
+      }, Math.max(0, remaining));
+    }
+  };
+
+  arm(delayMs);
+
+  return {
+    cancel: () => {
+      cancelled = true;
+      clearTimeout(handle);
+    },
+  };
 }

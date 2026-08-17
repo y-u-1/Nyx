@@ -14,21 +14,21 @@ export const xp: Command = {
         .setName("add")
         .setDescription("Add XP to a member (triggers level-up rewards if applicable)")
         .addUserOption((opt) => opt.setName("user").setDescription("Target member").setRequired(true))
-        .addIntegerOption((opt) => opt.setName("amount").setDescription("Amount of XP to add").setRequired(true).setMinValue(1)),
+        .addIntegerOption((opt) => opt.setName("amount").setDescription("Amount of XP to add").setRequired(true).setMinValue(1).setMaxValue(1_000_000_000)),
     )
     .addSubcommand((sub) =>
       sub
         .setName("remove")
         .setDescription("Remove XP from a member")
         .addUserOption((opt) => opt.setName("user").setDescription("Target member").setRequired(true))
-        .addIntegerOption((opt) => opt.setName("amount").setDescription("Amount of XP to remove").setRequired(true).setMinValue(1)),
+        .addIntegerOption((opt) => opt.setName("amount").setDescription("Amount of XP to remove").setRequired(true).setMinValue(1).setMaxValue(1_000_000_000)),
     )
     .addSubcommand((sub) =>
       sub
         .setName("set")
         .setDescription("Set a member's total XP")
         .addUserOption((opt) => opt.setName("user").setDescription("Target member").setRequired(true))
-        .addIntegerOption((opt) => opt.setName("amount").setDescription("New total XP").setRequired(true).setMinValue(0)),
+        .addIntegerOption((opt) => opt.setName("amount").setDescription("New total XP").setRequired(true).setMinValue(0).setMaxValue(1_000_000_000)),
     ),
 
   async execute(interaction: ChatInputCommandInteraction) {

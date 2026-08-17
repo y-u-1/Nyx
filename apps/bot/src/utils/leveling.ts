@@ -12,12 +12,16 @@ function xpForLevel(level: number): number {
   return 5 * level * level + 50 * level + 100;
 }
 
+/** ループの安全弁。通常の経済/XPコマンドは上限付きだが、想定外に巨大なXPが渡された場合に
+ * ループが極端に長時間回り続けるのを防ぐ(レベル10万は現実的にまず到達しない)。 */
+const MAX_CALCULATED_LEVEL = 100_000;
+
 /** 累計XPから現在のレベル・そのレベル内での進捗・次レベルまでの必要XPを算出する */
 export function calculateLevel(totalXp: number) {
   let level = 0;
-  let remaining = totalXp;
+  let remaining = Number.isFinite(totalXp) ? Math.max(0, totalXp) : 0;
 
-  while (remaining >= xpForLevel(level)) {
+  while (remaining >= xpForLevel(level) && level < MAX_CALCULATED_LEVEL) {
     remaining -= xpForLevel(level);
     level++;
   }

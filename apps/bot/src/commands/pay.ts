@@ -8,7 +8,7 @@ export const pay: Command = {
     .setName("pay")
     .setDescription("Send coins to another member.")
     .addUserOption((opt) => opt.setName("user").setDescription("Member to pay").setRequired(true))
-    .addIntegerOption((opt) => opt.setName("amount").setDescription("Amount of coins to send").setRequired(true).setMinValue(1)),
+    .addIntegerOption((opt) => opt.setName("amount").setDescription("Amount of coins to send").setRequired(true).setMinValue(1).setMaxValue(1_000_000_000)),
 
   async execute(interaction: ChatInputCommandInteraction) {
     if (!interaction.guildId) return;

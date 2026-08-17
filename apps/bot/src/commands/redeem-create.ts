@@ -13,7 +13,7 @@ export const redeemCreate: Command = {
     .addStringOption((opt) => opt.setName("code").setDescription("The code members will redeem").setRequired(true))
     .addRoleOption((opt) => opt.setName("role").setDescription("Role to grant on redemption"))
     .addAttachmentOption((opt) => opt.setName("image").setDescription("Image to DM the redeemer"))
-    .addIntegerOption((opt) => opt.setName("max_uses").setDescription("Maximum number of redemptions (default 1)").setMinValue(1))
+    .addIntegerOption((opt) => opt.setName("max_uses").setDescription("Maximum number of redemptions (default 1)").setMinValue(1).setMaxValue(100_000))
     .addStringOption((opt) => opt.setName("expires_in").setDescription("Expires after, e.g. 1d, 7d (default: never)")),
 
   async execute(interaction: ChatInputCommandInteraction) {

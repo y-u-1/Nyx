@@ -37,12 +37,15 @@ async function handleVerifyStart(interaction: ButtonInteraction) {
  * 成功時はパネル本体のEntries数も更新する。
  */
 async function handleGiveawayEnter(interaction: ButtonInteraction, giveawayId: string) {
+  // DB問い合わせを挟む前に必ず先にackする。3秒以内にreply/deferReplyしないと
+  // interactionトークンが失効し「このインタラクションは失敗しました」になってしまうため。
+  await interaction.deferReply({ ephemeral: true });
+
   const giveaway = await prisma.giveaway.findUnique({ where: { id: giveawayId }, include: { entries: true } });
 
   if (!giveaway || giveaway.ended || giveaway.cancelled) {
-    await interaction.reply({
+    await interaction.editReply({
       embeds: [baseEmbed({ tone: "error", description: "This giveaway is no longer active." })],
-      ephemeral: true,
     });
     return;
   }
@@ -54,17 +57,15 @@ async function handleGiveawayEnter(interaction: ButtonInteraction, giveawayId: s
 
   if (!hasBypass) {
     if (giveaway.blacklistRoleId && roleCache?.has(giveaway.blacklistRoleId)) {
-      await interaction.reply({
+      await interaction.editReply({
         embeds: [baseEmbed({ tone: "error", description: "You're not eligible to enter this giveaway." })],
-        ephemeral: true,
       });
       return;
     }
 
     if (giveaway.requiredRoleId && !roleCache?.has(giveaway.requiredRoleId)) {
-      await interaction.reply({
+      await interaction.editReply({
         embeds: [baseEmbed({ tone: "error", description: `You need the <@&${giveaway.requiredRoleId}> role to enter this giveaway.` })],
-        ephemeral: true,
       });
       return;
     }
@@ -72,9 +73,8 @@ async function handleGiveawayEnter(interaction: ButtonInteraction, giveawayId: s
     if (giveaway.minAccountAgeDays) {
       const accountAgeDays = (Date.now() - interaction.user.createdTimestamp) / (1000 * 60 * 60 * 24);
       if (accountAgeDays < giveaway.minAccountAgeDays) {
-        await interaction.reply({
+        await interaction.editReply({
           embeds: [baseEmbed({ tone: "error", description: `Your Discord account must be at least ${giveaway.minAccountAgeDays} days old to enter this giveaway.` })],
-          ephemeral: true,
         });
         return;
       }
@@ -87,9 +87,8 @@ async function handleGiveawayEnter(interaction: ButtonInteraction, giveawayId: s
       });
       const currentLevel = userLevel?.level ?? 0;
       if (currentLevel < giveaway.minLevel) {
-        await interaction.reply({
+        await interaction.editReply({
           embeds: [baseEmbed({ tone: "error", description: `You need to be at least level ${giveaway.minLevel} to enter this giveaway. (Currently: ${currentLevel})` })],
-          ephemeral: true,
         });
         return;
       }
@@ -102,18 +101,16 @@ async function handleGiveawayEnter(interaction: ButtonInteraction, giveawayId: s
     await prisma.giveawayEntry.create({ data: { giveawayId, userId: interaction.user.id, weight } });
   } catch (error: any) {
     if (error?.code === "P2002") {
-      await interaction.reply({
+      await interaction.editReply({
         embeds: [baseEmbed({ tone: "warning", description: "You've already entered this giveaway." })],
-        ephemeral: true,
       });
       return;
     }
     throw error;
   }
 
-  await interaction.reply({
+  await interaction.editReply({
     embeds: [baseEmbed({ tone: "success", description: `You're entered for **${giveaway.prize}**. Good luck!` })],
-    ephemeral: true,
   });
 
   // パネル本体のEntries数を更新(buildGiveawayContainerはgiveaway.tsに定義。循環import回避のため動的import)
@@ -171,12 +168,16 @@ async function handleTicketOpen(interaction: ButtonInteraction) {
 async function handleTicketClaim(interaction: ButtonInteraction, ticketNumber: string) {
   if (!interaction.guildId || !interaction.channelId) return;
 
+  // deferUpdate() は「ローディング表示なしでack」する版。最終的にパネル本体を書き換えるボタンなので
+  // reply()ではなくこちらを使う。権限エラーなど本人にだけ見せたいメッセージはfollowUp(ephemeral)で送る。
+  await interaction.deferUpdate();
+
   const settings = await prisma.ticketSettings.findUnique({ where: { guildId: interaction.guildId } });
   const member = interaction.member;
   const roleCache = member && !Array.isArray(member.roles) ? member.roles.cache : null;
 
   if (settings?.staffRoleId && !roleCache?.has(settings.staffRoleId)) {
-    await interaction.reply({
+    await interaction.followUp({
       embeds: [baseEmbed({ tone: "error", description: "Only staff can claim this ticket." })],
       ephemeral: true,
     });
@@ -198,12 +199,14 @@ async function handleTicketClaim(interaction: ButtonInteraction, ticketNumber: s
     status: "open",
   });
 
-  await interaction.update({ components: row ? [container, row] : [container] });
+  await interaction.editReply({ components: row ? [container, row] : [container] });
 }
 
 /** "Close" ボタン押下時の処理。ステータス更新後、少し待ってチャンネルを削除する。 */
 async function handleTicketClose(interaction: ButtonInteraction, ticketNumber: string) {
   if (!interaction.channelId || !interaction.guildId) return;
+
+  await interaction.deferReply();
 
   await prisma.ticket.update({
     where: { channelId: interaction.channelId },
@@ -212,7 +215,7 @@ async function handleTicketClose(interaction: ButtonInteraction, ticketNumber: s
 
   await sendLog(interaction.client, interaction.guildId, "ticket", "Ticket Closed", `**Ticket:** #${ticketNumber.padStart(4, "0")}\n**Closed by:** <@${interaction.user.id}>`, "error");
 
-  await interaction.reply({
+  await interaction.editReply({
     embeds: [baseEmbed({ tone: "warning", description: "This ticket will be closed in a few seconds." })],
   });
 
@@ -231,9 +234,11 @@ async function handleTicketClose(interaction: ButtonInteraction, ticketNumber: s
 async function handleRolePanelToggle(interaction: ButtonInteraction, panelRoleId: string) {
   if (!interaction.guild) return;
 
+  await interaction.deferReply({ ephemeral: true });
+
   const panelRole = await prisma.rolePanelRole.findUnique({ where: { id: panelRoleId } });
   if (!panelRole) {
-    await interaction.reply({ embeds: [baseEmbed({ tone: "error", description: "This button is no longer valid." })], ephemeral: true });
+    await interaction.editReply({ embeds: [baseEmbed({ tone: "error", description: "This button is no longer valid." })] });
     return;
   }
 
@@ -243,22 +248,24 @@ async function handleRolePanelToggle(interaction: ButtonInteraction, panelRoleId
   try {
     if (hasRole) {
       await member.roles.remove(panelRole.roleId);
-      await interaction.reply({ embeds: [baseEmbed({ tone: "success", description: `Removed <@&${panelRole.roleId}>.` })], ephemeral: true });
+      await interaction.editReply({ embeds: [baseEmbed({ tone: "success", description: `Removed <@&${panelRole.roleId}>.` })] });
     } else {
       await member.roles.add(panelRole.roleId);
-      await interaction.reply({ embeds: [baseEmbed({ tone: "success", description: `Added <@&${panelRole.roleId}>.` })], ephemeral: true });
+      await interaction.editReply({ embeds: [baseEmbed({ tone: "success", description: `Added <@&${panelRole.roleId}>.` })] });
     }
   } catch (error) {
     console.error("[Nyx.] Failed to toggle role panel role", error);
-    await interaction.reply({ embeds: [baseEmbed({ tone: "error", description: "I couldn't update your roles (check my role position)." })], ephemeral: true });
+    await interaction.editReply({ embeds: [baseEmbed({ tone: "error", description: "I couldn't update your roles (check my role position)." })] });
   }
 }
 
 /** 投票ボタン押下時の処理。既に投票済みなら選択肢を変更、未投票なら新規登録する。 */
 async function handlePollVote(interaction: ButtonInteraction, pollId: string, optionIndex: number) {
+  await interaction.deferReply({ ephemeral: true });
+
   const pollRecord = await prisma.poll.findUnique({ where: { id: pollId } });
   if (!pollRecord || pollRecord.closed) {
-    await interaction.reply({ embeds: [baseEmbed({ tone: "error", description: "This poll is closed." })], ephemeral: true });
+    await interaction.editReply({ embeds: [baseEmbed({ tone: "error", description: "This poll is closed." })] });
     return;
   }
 
@@ -268,9 +275,8 @@ async function handlePollVote(interaction: ButtonInteraction, pollId: string, op
     update: { optionIndex },
   });
 
-  await interaction.reply({
+  await interaction.editReply({
     embeds: [baseEmbed({ tone: "success", description: `Your vote for **${pollRecord.options[optionIndex]}** has been recorded.` })],
-    ephemeral: true,
   });
 
   const { refreshPollMessage } = await import("../utils/poll.js");
@@ -279,11 +285,13 @@ async function handlePollVote(interaction: ButtonInteraction, pollId: string, op
 
 /** 申請フォーム(Modal)送信時の処理。回答をレビューチャンネルに投稿する。 */
 async function handleApplySubmit(interaction: ModalSubmitInteraction) {
+  await interaction.deferReply({ ephemeral: true });
+
   const applicationTypeId = interaction.customId.replace("apply:submit:", "");
   const applicationType = await prisma.applicationType.findUnique({ where: { id: applicationTypeId } });
 
   if (!applicationType) {
-    await interaction.reply({ embeds: [baseEmbed({ tone: "error", description: "This application is no longer available." })], ephemeral: true });
+    await interaction.editReply({ embeds: [baseEmbed({ tone: "error", description: "This application is no longer available." })] });
     return;
   }
 
@@ -306,10 +314,26 @@ async function handleApplySubmit(interaction: ModalSubmitInteraction) {
     console.error("[Nyx.] Failed to post application submission", error);
   }
 
-  await interaction.reply({
+  await interaction.editReply({
     embeds: [baseEmbed({ tone: "success", description: "Your application has been submitted." })],
-    ephemeral: true,
   });
+}
+
+/** ボタン/モーダル処理中に例外が起きた際、既にdeferReply/deferUpdate済みなら
+ * 「thinking…」のまま固まらないようエラーメッセージで締める。
+ * トークン失効(10062)など、そもそも応答不可能なケースはここも失敗するので握りつぶす。
+ */
+async function notifyInteractionError(interaction: ButtonInteraction | ModalSubmitInteraction) {
+  const errorEmbed = baseEmbed({ tone: "error", description: "An unexpected error occurred." });
+  try {
+    if (interaction.deferred || interaction.replied) {
+      await interaction.editReply({ embeds: [errorEmbed] });
+    } else {
+      await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+    }
+  } catch {
+    // インタラクションが既に失効している場合などはこれ以上できることがない
+  }
 }
 
 async function handleButton(interaction: ButtonInteraction) {
@@ -358,6 +382,7 @@ export function registerInteractionCreateEvent(client: NyxClient) {
         await handleButton(interaction);
       } catch (error) {
         console.error("[Nyx.] Error handling button interaction", error);
+        await notifyInteractionError(interaction);
       }
       return;
     }
@@ -369,6 +394,7 @@ export function registerInteractionCreateEvent(client: NyxClient) {
         }
       } catch (error) {
         console.error("[Nyx.] Error handling modal submit", error);
+        await notifyInteractionError(interaction);
       }
       return;
     }

@@ -1,7 +1,8 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ContainerBuilder, MessageFlags, SeparatorBuilder, SeparatorSpacingSize, TextDisplayBuilder, type Client } from "discord.js";
 import { prisma } from "@nyx/database";
+import { safeSetTimeout, type SafeTimer } from "./duration.js";
 
-const activeTimers = new Map<string, NodeJS.Timeout>();
+const activeTimers = new Map<string, SafeTimer>();
 
 /** 投票パネルを組み立てる。開催中はボタン付き、終了後は集計結果表示。 */
 export function buildPollContainer({
@@ -70,7 +71,7 @@ export async function refreshPollMessage(client: Client, pollId: string) {
 export async function closePoll(client: Client, pollId: string) {
   const timer = activeTimers.get(pollId);
   if (timer) {
-    clearTimeout(timer);
+    timer.cancel();
     activeTimers.delete(pollId);
   }
 
@@ -83,6 +84,6 @@ export async function closePoll(client: Client, pollId: string) {
 
 export function schedulePollClose(client: Client, pollId: string, closesAt: Date) {
   const delay = Math.max(0, closesAt.getTime() - Date.now());
-  const timer = setTimeout(() => closePoll(client, pollId), delay);
+  const timer = safeSetTimeout(() => closePoll(client, pollId), delay);
   activeTimers.set(pollId, timer);
 }

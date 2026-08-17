@@ -14,9 +14,10 @@
 } from "discord.js";
 import { prisma } from "@nyx/database";
 import { buildPanel, DEFAULT_COLORS } from "./embeds.js";
+import { safeSetTimeout, type SafeTimer } from "./duration.js";
 
 // 繧ｵ繝ｼ繝舌・蜀崎ｵｷ蜍輔ｒ縺ｾ縺溘＞縺ｧ繧ゅち繧､繝槭・繧貞・逋ｻ骭ｲ縺ｧ縺阪ｋ繧医≧縲・ｲ陦御ｸｭ縺ｮ繧ｿ繧､繝槭・繧偵Γ繝｢繝ｪ荳翫↓菫晄戟縺吶ｋ縲・
-const activeTimers = new Map<string, NodeJS.Timeout>();
+const activeTimers = new Map<string, SafeTimer>();
 
 interface GiveawayPanelData {
   prize: string;
@@ -371,7 +372,7 @@ export async function cancelGiveaway(client: Client, giveawayId: string) {
 function clearGiveawayTimer(giveawayId: string) {
   const timer = activeTimers.get(giveawayId);
   if (timer) {
-    clearTimeout(timer);
+    timer.cancel();
     activeTimers.delete(giveawayId);
   }
 }
@@ -380,7 +381,7 @@ function clearGiveawayTimer(giveawayId: string) {
 export function scheduleGiveawayEnd(client: Client, giveawayId: string, endsAt: Date) {
   clearGiveawayTimer(giveawayId);
   const delay = Math.max(0, endsAt.getTime() - Date.now());
-  const timer = setTimeout(() => endGiveaway(client, giveawayId), delay);
+  const timer = safeSetTimeout(() => endGiveaway(client, giveawayId), delay);
   activeTimers.set(giveawayId, timer);
 }
 

@@ -13,21 +13,21 @@ export const coin: Command = {
         .setName("add")
         .setDescription("Add coins to a member")
         .addUserOption((opt) => opt.setName("user").setDescription("Target member").setRequired(true))
-        .addIntegerOption((opt) => opt.setName("amount").setDescription("Amount of coins to add").setRequired(true).setMinValue(1)),
+        .addIntegerOption((opt) => opt.setName("amount").setDescription("Amount of coins to add").setRequired(true).setMinValue(1).setMaxValue(1_000_000_000)),
     )
     .addSubcommand((sub) =>
       sub
         .setName("remove")
         .setDescription("Remove coins from a member")
         .addUserOption((opt) => opt.setName("user").setDescription("Target member").setRequired(true))
-        .addIntegerOption((opt) => opt.setName("amount").setDescription("Amount of coins to remove").setRequired(true).setMinValue(1)),
+        .addIntegerOption((opt) => opt.setName("amount").setDescription("Amount of coins to remove").setRequired(true).setMinValue(1).setMaxValue(1_000_000_000)),
     )
     .addSubcommand((sub) =>
       sub
         .setName("set")
         .setDescription("Set a member's coin balance")
         .addUserOption((opt) => opt.setName("user").setDescription("Target member").setRequired(true))
-        .addIntegerOption((opt) => opt.setName("amount").setDescription("New balance").setRequired(true).setMinValue(0)),
+        .addIntegerOption((opt) => opt.setName("amount").setDescription("New balance").setRequired(true).setMinValue(0).setMaxValue(1_000_000_000)),
     ),
 
   async execute(interaction: ChatInputCommandInteraction) {

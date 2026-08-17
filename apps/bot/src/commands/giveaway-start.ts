@@ -45,7 +45,7 @@ export const giveawayStart: Command = {
     )
     .addBooleanOption((opt) => opt.setName("dm_winners").setDescription("Also DM the winner(s) when the giveaway ends"))
     .addRoleOption((opt) => opt.setName("winners_role").setDescription("Role to automatically give to the winner(s)"))
-    .addIntegerOption((opt) => opt.setName("coin_prize").setDescription("Coins to award each winner (economy system)").setMinValue(1))
+    .addIntegerOption((opt) => opt.setName("coin_prize").setDescription("Coins to award each winner (economy system)").setMinValue(1).setMaxValue(1_000_000_000))
     .addRoleOption((opt) => opt.setName("ping_role").setDescription("Role to mention when the giveaway starts and ends"))
     .addRoleOption((opt) => opt.setName("required_role").setDescription("Only members with this role can enter"))
     .addRoleOption((opt) => opt.setName("blacklist_role").setDescription("Members with this role cannot enter"))
