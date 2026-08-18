@@ -70,16 +70,6 @@ import { slowmode } from "./commands/slowmode.js";
 import { modlog } from "./commands/modlog.js";
 import { logsConfig } from "./commands/logs-config.js";
 import { earthquakeConfig } from "./commands/earthquake-config.js";
-import { play } from "./commands/play.js";
-import { skip } from "./commands/skip.js";
-import { stop } from "./commands/stop.js";
-import { pause } from "./commands/pause.js";
-import { resume } from "./commands/resume.js";
-import { queue } from "./commands/queue.js";
-import { volume } from "./commands/volume.js";
-import { loop } from "./commands/loop.js";
-import { nowplaying } from "./commands/nowplaying.js";
-import { shuffle } from "./commands/shuffle.js";
 import { inventory } from "./commands/inventory.js";
 import { vouch } from "./commands/vouch.js";
 import { reputation } from "./commands/reputation.js";
@@ -98,7 +88,6 @@ import { military } from "./commands/military.js";
 import { requeueGiveaways } from "./utils/giveaway.js";
 import { startVoiceXpTracker } from "./utils/voiceXp.js";
 import { startEarthquakeListener } from "./utils/earthquake.js";
-import { initPlayer } from "./utils/music.js";
 
 const client = createClient();
 
@@ -159,16 +148,6 @@ const commands = [
   modlog,
   logsConfig,
   earthquakeConfig,
-  play,
-  skip,
-  stop,
-  pause,
-  resume,
-  queue,
-  volume,
-  loop,
-  nowplaying,
-  shuffle,
   inventory,
   vouch,
   reputation,
@@ -208,7 +187,6 @@ client.once("ready", () => {
   requeueGiveaways(client).catch((error) => console.error("[Nyx.] Failed to requeue giveaways", error));
   startVoiceXpTracker(client);
   startEarthquakeListener(client);
-  initPlayer(client).catch((error) => console.error("[Nyx.] Failed to initialize music player", error));
 });
 
 startHealthServer();

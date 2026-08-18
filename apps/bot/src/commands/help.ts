@@ -14,11 +14,11 @@ function categorize(name: string): string {
   if (name.startsWith("redeem")) return "Redeem";
   if (name.startsWith("ticket")) return "Tickets";
   if (name.startsWith("reaction-role") || name.startsWith("role-panel")) return "Roles";
-  if (["play", "skip", "stop", "pause", "resume", "queue", "volume", "loop", "nowplaying", "shuffle"].includes(name)) return "Music";
-  if (["profile", "badge", "avatar", "banner", "userinfo", "roles", "serverinfo", "vouch", "reputation"].includes(name)) return "Profile & Info";
+  if (["profile", "badge", "avatar", "banner", "userinfo", "roles", "serverinfo", "vouch", "reputation", "affinity", "hug", "pat"].includes(name)) return "Profile & Info";
   if (["poll", "poll-close", "rules", "announce", "partner"].includes(name)) return "Community";
   if (name.startsWith("apply")) return "Applications";
   if (["config", "welcome-config", "verify-panel"].includes(name)) return "Configuration";
+  if (["citizen", "election", "military"].includes(name)) return "Nation";
   return "Other";
 }
 
