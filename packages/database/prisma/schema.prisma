@@ -2,7 +2,9 @@
 // 設計方針: 全テーブルに guildId を持たせ、サーバーごとにデータを分離する
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+  output          = "../generated/client"
 }
 
 datasource db {
