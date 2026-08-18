@@ -77,6 +77,9 @@ import { help } from "./commands/help.js";
 import { affinity } from "./commands/affinity.js";
 import { hug } from "./commands/hug.js";
 import { pat } from "./commands/pat.js";
+import { citizen } from "./commands/citizen.js";
+import { election } from "./commands/election.js";
+import { military } from "./commands/military.js";
 
 const commands = [
   ping,
@@ -156,6 +159,9 @@ const commands = [
   affinity,
   hug,
   pat,
+  citizen,
+  election,
+  military,
 ].map((c) => c.data.toJSON());
 
 const rest = new REST().setToken(process.env.DISCORD_TOKEN!);

@@ -92,6 +92,9 @@ import { help } from "./commands/help.js";
 import { affinity } from "./commands/affinity.js";
 import { hug } from "./commands/hug.js";
 import { pat } from "./commands/pat.js";
+import { citizen } from "./commands/citizen.js";
+import { election } from "./commands/election.js";
+import { military } from "./commands/military.js";
 import { requeueGiveaways } from "./utils/giveaway.js";
 import { startVoiceXpTracker } from "./utils/voiceXp.js";
 import { startEarthquakeListener } from "./utils/earthquake.js";
@@ -178,6 +181,9 @@ const commands = [
   affinity,
   hug,
   pat,
+  citizen,
+  election,
+  military,
 ];
 for (const command of commands) {
   client.commands.set(command.data.name, command);

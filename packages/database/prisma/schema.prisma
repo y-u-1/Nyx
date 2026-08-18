@@ -519,3 +519,137 @@ model Affinity {
   @@index([guildId, userAId])
   @@index([guildId, userBId])
 }
+
+// ─────────────────────────────
+// 国民登録・パスポート(Citizen)
+// サーバーへの「入国審査」的な申請フロー。
+// 承認されるとcitizenNumber(国民番号)が発行され、指定ロールが付与される。
+// ─────────────────────────────
+model Citizen {
+  id      String @id @default(cuid())
+  guildId String
+  userId  String
+
+  status String @default("pending") // "pending" | "approved" | "rejected"
+
+  // 申請時に希望したロール(国籍/身分など)。承認時にこのロールが付与される。
+  requestedRoleId String?
+  reason          String? // 申請理由・自己紹介など(任意)
+
+  citizenNumber Int? // 承認された順番に発行される国民番号(承認まではnull)
+
+  appliedAt    DateTime  @default(now())
+  approvedAt   DateTime?
+  approvedById String?
+  rejectedAt   DateTime?
+  rejectedById String?
+  rejectReason String?
+
+  @@unique([guildId, userId])
+  @@index([guildId, status])
+}
+
+// ─────────────────────────────
+// 選挙・任期制(Election)
+// 立候補登録 → 投票期間 → 自動集計 → 当選者にロール付与 → (任期があれば)自動失効
+// ─────────────────────────────
+model Election {
+  id      String @id @default(cuid())
+  guildId String
+
+  title  String // 例: "国王選挙"
+  roleId String // 当選者に付与するロール
+  channelId String // 結果を告知するチャンネル(/election start を実行したチャンネル)
+
+  status String @default("registration") // "registration" | "voting" | "ended" | "cancelled"
+
+  registrationEndsAt DateTime
+  votingEndsAt       DateTime
+
+  termDays Int? // 任期(日数)。nullなら無期限
+
+  winnerUserId String?
+  termEndsAt   DateTime?
+
+  createdById String
+  createdAt   DateTime @default(now())
+
+  candidates ElectionCandidate[]
+  votes      ElectionVote[]
+
+  @@index([guildId, status])
+}
+
+model ElectionCandidate {
+  id         String @id @default(cuid())
+  electionId String
+  userId     String
+  manifesto  String?
+  createdAt  DateTime @default(now())
+
+  election Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+
+  @@unique([electionId, userId])
+}
+
+model ElectionVote {
+  id              String @id @default(cuid())
+  electionId      String
+  voterId         String
+  candidateUserId String
+  createdAt       DateTime @default(now())
+
+  election Election @relation(fields: [electionId], references: [id], onDelete: Cascade)
+
+  @@unique([electionId, voterId])
+  @@index([electionId, candidateUserId])
+}
+
+// ─────────────────────────────
+// 軍事・隊列(Military)
+// 隊列(部隊)への所属と、隊列内での階級・功績ポイントを管理する。
+// ─────────────────────────────
+model MilitaryUnit {
+  id        String   @id @default(cuid())
+  guildId   String
+  name      String // 隊列名(例: "近衛騎士団")
+  roleId    String? // 所属時に付与するロール
+  createdAt DateTime @default(now())
+
+  ranks   MilitaryRank[]
+  members MilitaryMember[]
+
+  @@unique([guildId, name])
+}
+
+model MilitaryRank {
+  id             String @id @default(cuid())
+  guildId        String
+  unitId         String
+  name           String // 階級名(例: "少尉")
+  order          Int // 昇進順(数値が大きいほど上位階級)
+  roleId         String? // 階級ロール
+  requiredPoints Int    @default(0) // この階級に必要な功績ポイントの目安(手動昇進の参考値)
+
+  unit    MilitaryUnit     @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  members MilitaryMember[]
+
+  @@unique([unitId, name])
+  @@index([guildId, unitId])
+}
+
+model MilitaryMember {
+  id       String @id @default(cuid())
+  guildId  String
+  userId   String
+  unitId   String
+  rankId   String?
+  points   Int      @default(0)
+  joinedAt DateTime @default(now())
+
+  unit MilitaryUnit  @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  rank MilitaryRank? @relation(fields: [rankId], references: [id], onDelete: SetNull)
+
+  @@unique([guildId, userId])
+  @@index([guildId, unitId])
+}
